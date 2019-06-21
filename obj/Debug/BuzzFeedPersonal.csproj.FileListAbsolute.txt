@@ -1,0 +1,9 @@
+C:\Users\Owner\Desktop\BuzzFeedPersonal\bin\Debug\Database1.mdf
+C:\Users\Owner\Desktop\BuzzFeedPersonal\bin\Debug\Database1_log.ldf
+C:\Users\Owner\Desktop\BuzzFeedPersonal\bin\Debug\BuzzFeedPersonal.exe.config
+C:\Users\Owner\Desktop\BuzzFeedPersonal\bin\Debug\BuzzFeedPersonal.exe
+C:\Users\Owner\Desktop\BuzzFeedPersonal\bin\Debug\BuzzFeedPersonal.pdb
+C:\Users\Owner\Desktop\BuzzFeedPersonal\obj\Debug\BuzzFeedPersonal.csprojAssemblyReference.cache
+C:\Users\Owner\Desktop\BuzzFeedPersonal\obj\Debug\BuzzFeedPersonal.csproj.CoreCompileInputs.cache
+C:\Users\Owner\Desktop\BuzzFeedPersonal\obj\Debug\BuzzFeedPersonal.exe
+C:\Users\Owner\Desktop\BuzzFeedPersonal\obj\Debug\BuzzFeedPersonal.pdb
