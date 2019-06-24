@@ -17,9 +17,8 @@ namespace PersonalBuzzFeed
             showMenu(c);
             c.Close();
         }
-        static public SqlConnection connection = new SqlConnection(@"Data Source = (LocalDB)\MSSQLLocalDB; 
-                                                      AttachDbFilename = C:\Users\Owner\Desktop\BuzzFeedPersonal\Database1.mdf;Integrated Security = True");
-        static internal int quizId; //Make sure its set
+        static public SqlConnection connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Owner\Code\Projects\BuzzFeedPersonal\Database1.mdf;Integrated Security=  True");
+        static internal int quizId; 
         static internal int QuestionId;
         static internal int Score;
         static internal int TempScore;
@@ -27,7 +26,7 @@ namespace PersonalBuzzFeed
         static internal int totalQuestions;
         static internal string UserInput;
         static internal List<string[]> questions = new List<string[]>();
-        static internal List<string[]> answers = new List<string[]>(); // KEEPS LOADING SAME ANSWER AGAIN AND AGAIN
+        static internal List<string[]> answers = new List<string[]>(); 
         static internal void error(){
             Console.Clear();
             Console.WriteLine("Invalid Entry, Please Try Again\nPress[ENTER]To Continue...");
@@ -67,7 +66,7 @@ namespace PersonalBuzzFeed
             while (keepGoing){
                 SqlDataReader reader = cmd.ExecuteReader(); Console.Clear(); string holder = "";
                 while (reader.Read()){
-                    Console.WriteLine($"[{reader["Id"]}]{reader["Text"]}\n{reader["subtext"]}\n");
+                    Console.WriteLine($"[{reader["Id"]}]{reader["Text"]}\n\t({reader["subtext"]})\n");
                     holder += (reader["id"].ToString() + " ");
                 }reader.Close();
                 Console.WriteLine("\nSelect A[QUIZ]\tOr Enter[Q] At AnyTime To Quit");
@@ -97,21 +96,22 @@ namespace PersonalBuzzFeed
         static internal void loadQuestions(SqlConnection c){
             SqlCommand cmd = new SqlCommand($@"SELECT *, (SELECT COUNT(*) FROM Questions WHERE QuizId={quizId})  AS NumOQ  FROM Questions WHERE QuizId={quizId} ORDER BY QuestionNumber;",c);
             SqlDataReader reader = cmd.ExecuteReader(); 
+            while (reader.Read()) { 
             string[] question = new string[4];
-            while (reader.Read()){
                 question[0] = reader["Id"].ToString();
                 question[1] = reader["QuestionNumber"].ToString();
                 question[2] = reader["Text"].ToString();
                 question[3] = reader["NumOQ"].ToString();
                 questions.Add(question);
+                reader.Read();
             }
             reader.Close();
         }
-        static internal void loadAnswers(int questionId, SqlConnection c){
-            SqlCommand cmd = new SqlCommand($@"SELECT *, (SELECT COUNT(*) FROM Answers WHERE QuestionId={questionId})  AS AperQ  FROM Answers WHERE Questionid={questionId} ORDER BY AnswerNumber;",c);
+        static internal void loadAnswers(SqlConnection c){
+            SqlCommand cmd = new SqlCommand($@"SELECT *, (SELECT COUNT(*) FROM Answers WHERE QuestionId={QuestionId})  AS AperQ  FROM Answers WHERE Questionid={QuestionId} ORDER BY AnswerNumber;",c);
             SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()){ 
             string[] answer = new string[5];
-            while (reader.Read()){
                 answer[0] = reader["Id"].ToString();
                 answer[1] = reader["AnswerNumber"].ToString();
                 answer[2] = reader["Text"].ToString();
@@ -120,46 +120,48 @@ namespace PersonalBuzzFeed
                 answers.Add(answer);
             }
             reader.Close();
+          
         }
-        static bool recordScore(){
+        static bool recordScore(){//Score Not adding, Temp Score Not Clearing, 26,10,0
             if (Int32.TryParse(UserInput, out int choice)){
                 for (int i = 0; i <= totalAnswers; i++){
                     if (choice == Convert.ToInt16(answers[i][1])){
                         TempScore += Convert.ToInt16(answers[i][3]); return true;
                     }
                 }
-                if (Score + TempScore == Score && TempScore != 0){
+                if (Score + TempScore == Score && TempScore != 0)
+                {
                     error(); return false;
                 }
-                TempScore = 0;
+                else
+                    Score += TempScore;
+                    TempScore = 0;
             }
             else  error(); return false; 
         }
         static void takeQuiz(SqlConnection c){
 
             loadQuestions(c);   int QuestionNumber = 0;   bool keepGoing = true;
-            Console.WriteLine(Convert.ToInt16(questions[QuestionNumber][3])); Console.ReadLine();
             totalQuestions = Convert.ToInt16(questions[QuestionNumber][3]);
 
             while (QuestionNumber < totalQuestions ){
-
-                QuestionId = Convert.ToInt16(questions[QuestionNumber][0]);
-
-                loadAnswers(QuestionId,c);
+                QuestionId = Convert.ToInt16(questions[QuestionNumber][0]);//QuestionId Not Resetting Maybe?
+                loadAnswers(c);
                 totalAnswers = Convert.ToInt16(answers[QuestionNumber][4]);
 
                 while (keepGoing) {
                     Console.Clear();   int AnswerNumber = 0;
                     
                     Console.WriteLine($"Question {questions[QuestionNumber][1]}) {questions[QuestionNumber][2]}\n");
-                    while (AnswerNumber < totalAnswers){
-                        Console.WriteLine($"\n[{answers[AnswerNumber][1]}]{answers[AnswerNumber++][2]}");
+                    while (AnswerNumber < totalAnswers){//Shows Next Question, But Not Next Set Of Answers
+                        Console.WriteLine($"\n\t[{answers[AnswerNumber][1]}]{answers[AnswerNumber++][2]}");
+                        
                     }
                     Console.WriteLine("\n\nSelect An [ANSWER]");
                     UserInput = Console.ReadLine();
                     keepGoing = recordScore();
+                    QuestionNumber++;
                 }
-                QuestionNumber++;
             }
         }
         static internal void clearCache()
