@@ -18,11 +18,11 @@ namespace PersonalBuzzFeed
     {
         static void Main(string[] args) {
             SqlConnection c = connection; bool keepGoing = true;
-            
-            Console.ReadLine();
             keepGoing = false;
+
             c.Open();
             while (keepGoing) {
+                continueAs(c);
                 showMenu(c);
                 string[] finalResult = calculateResult(c);//What if they make a quiz?
                 displayResults(finalResult);
@@ -41,10 +41,10 @@ namespace PersonalBuzzFeed
         static internal int Score;
         static internal int totalAnswers;
         static internal int totalQuestions;
-        static internal string UserInput;
-        static internal string userName;
+        static internal string userInput;
+        static internal string[] userName = new string[2];
         static internal string password;
-        static bool account;
+        static bool account = false;
         static internal List<Dictionary<string, string>> questions = new List<Dictionary<string, string>>();
         static internal List<Dictionary<string, string>> answers = new List<Dictionary<string, string>>();
         static internal List<string[]> results = new List<string[]>();
@@ -54,7 +54,7 @@ namespace PersonalBuzzFeed
             Score = 0;
             totalAnswers = 0;
             totalQuestions = 0;
-            UserInput = "";
+            userInput = "";
             questions = null;
             answers = null;
             Console.Clear();
@@ -68,13 +68,13 @@ namespace PersonalBuzzFeed
         static bool checkChoice(string holder) {
             bool keepGoing = true;
             for (int i = 0; i < holder.Split().Length; i++) {
-                if (UserInput.Split()[0] == holder.Split()[i]) UserInput = UserInput.Split()[0]; keepGoing = false;
+                if (userInput.Split()[0] == holder.Split()[i]) userInput = userInput.Split()[0]; keepGoing = false;
             }
             if (keepGoing == false) return false;
             else return true;
         }
         static bool recordScore(int start) {
-            if (Int32.TryParse(UserInput, out int choice)) {
+            if (Int32.TryParse(userInput, out int choice)) {
                 for (int i = start; i <= totalAnswers + start; i++) {
                     if (choice == Convert.ToInt16(answers[i]["AnswerNumber"])) {
                         choice = Convert.ToInt16(answers[i]["Score"]);
@@ -90,9 +90,9 @@ namespace PersonalBuzzFeed
             while (keepGoing) {
                 Console.Clear();
                 Console.WriteLine("Would You Like To Take Or Make A Quiz?\n[Y/N]");
-                UserInput = Console.ReadLine().ToUpper();
-                if (UserInput == "Y") { keepGoing = false; result = true; }
-                else if (UserInput == "N") { keepGoing = false; result = false; }
+                userInput = Console.ReadLine().ToUpper();
+                if (userInput == "Y") { keepGoing = false; result = true; }
+                else if (userInput == "N") { keepGoing = false; result = false; }
                 else error();
             }
             return result;
@@ -101,9 +101,8 @@ namespace PersonalBuzzFeed
             bool keepGoing = true;
             while (keepGoing) {
                 Console.Clear();
-                Console.WriteLine("Welcome To PopQuiz!");
                 Console.WriteLine("Would You Like To \n[A]Take A Quiz\t[B]Make A Quiz\t[Q]Quit");
-                switch (UserInput = Console.ReadLine().ToUpper()) {
+                switch (userInput = Console.ReadLine().ToUpper()) {
                     case "A":
                         keepGoing = selectQuiz(c); break;
                     case "B":
@@ -122,7 +121,7 @@ namespace PersonalBuzzFeed
             {
                 Console.Clear();
                 Console.WriteLine("Would You Like To \n[A]View Quizzes By Category\t[B]View All Quizzes\t[C]Go Back To Last Page");
-                switch (UserInput = Console.ReadLine().ToUpper())
+                switch (userInput = Console.ReadLine().ToUpper())
                 {
                     case "A":
                         keepGoing = showQuizzesByCategory(c);
@@ -148,11 +147,11 @@ namespace PersonalBuzzFeed
                     holder += (reader["id"].ToString() + " ");
                 } reader.Close();
                 Console.WriteLine("\nSelect A[CATEGORY]");
-                UserInput = Console.ReadLine();
+                userInput = Console.ReadLine();
                 keepGoing = checkChoice(holder);
                 if (keepGoing) error();
             }
-            return Convert.ToInt16(UserInput);
+            return Convert.ToInt16(userInput);
         }
         static internal bool showQuizzesByCategory(SqlConnection c) {
             int categoryId = selectCategory(c); bool keepGoing = true;
@@ -164,11 +163,11 @@ namespace PersonalBuzzFeed
                     holder += (reader["id"].ToString() + " ");
                 } reader.Close();
                 Console.WriteLine("\nSelect A[QUIZ]\tOr Enter[Q] At AnyTime To Quit");
-                UserInput = Console.ReadLine();
+                userInput = Console.ReadLine();
                 keepGoing = checkChoice(holder);
-                if (UserInput.ToUpper() == "Q") keepGoing = false;
+                if (userInput.ToUpper() == "Q") keepGoing = false;
                 if (keepGoing) error();
-                else quizId = Convert.ToInt16(UserInput); takeQuiz(c);
+                else quizId = Convert.ToInt16(userInput); takeQuiz(c);
             }
             return false;
         }
@@ -181,10 +180,10 @@ namespace PersonalBuzzFeed
                     holder += (reader["id"].ToString() + " ");
                 } reader.Close();
                 Console.WriteLine("\nSelect A[QUIZ]");
-                UserInput = Console.ReadLine();
+                userInput = Console.ReadLine();
                 keepGoing = checkChoice(holder);
                 if (keepGoing) error();
-                else quizId = Convert.ToInt16(UserInput); takeQuiz(c);
+                else quizId = Convert.ToInt16(userInput); takeQuiz(c);
             }
             return false;
         }
@@ -271,42 +270,56 @@ namespace PersonalBuzzFeed
                         Console.WriteLine($"\n\t[{answers[AnswerNumber]["AnswerNumber"]}]{answers[AnswerNumber++]["Text"]}");
                     }
                     Console.WriteLine("\n\nSelect An [ANSWER]");
-                    UserInput = Console.ReadLine();
+                    userInput = Console.ReadLine();
                     keepGoing = recordScore(placeHolder);
                     if (keepGoing) AnswerNumber = AnswerHistory; 
                 }
                 QuestionNumber++;
             }
         }
-        //======WIP======
-        //logIn();
-        //createAccount();
+        //======WIP======\\
         //quit();
-        static public bool save(){
+        //MORE COMMENTS
+        static public bool save(string[]final){
             Console.WriteLine("Would You Like To Save Your Results?");
-            UserInput = Console.ReadLine();
+            userInput = Console.ReadLine();
+            if (account == false) { Console.WriteLine($"Write Down Your Id\nYour Result Id: {final[0]}"); }
+            else if (account == true){
+                SqlCommand cmd = new SqlCommand($@"INSERT INTO History (userId,resultId)
+                                                              VALUES ({userName[1]},{final[0]})");
+            }
             return true;
         }
-        static bool logIn(SqlConnection c){
+        static bool logIn(SqlConnection c)
+        {
             bool matching = true;
             while (matching){
+                //Enter User Name
                 Console.WriteLine("Username:\nPassword:\nEnter Your UserName");
                 Console.WriteLine("\nEnter[Q]At Any Time To Quit");//Function?
-                userName = Console.ReadLine().ToUpper();
+                userName[0] = Console.ReadLine();
                 Console.Clear();
-                if (userName == "Q") return false;
+                if (userName[0].ToUpper().Split()[0] == "Q") return false;
+                //Enter Password
                 Console.WriteLine($"Username: {userName}\nPassword:\nEnter Your Password");
                 Console.WriteLine("\nEnter[Q]At Any Time To Quit");//Function?
-                password = Console.ReadLine().ToUpper();
+                password = Console.ReadLine();
                 Console.Clear();
-                if (password == "Q") return false;
+                if (password.ToUpper().Split()[0] == "Q") return false;
                 SqlCommand cmd = new SqlCommand("SELECT * FROM User",c);
                 SqlDataReader reader = cmd.ExecuteReader();
+                //Checking User Name & Password Against DataBase
                 while (reader.Read()){
-                    if (userName == reader["userName"].ToString() && password == reader["password"].ToString()) matching = false;
-                    else Console.Clear(); Console.WriteLine("UserName Or Password Incorrect\nPress[ENTER]To Continue..."); Console.ReadLine();
+                    if (userName[0].ToUpper() == reader["userName"].ToString().ToUpper() && password.ToUpper() == reader["password"].ToString().ToUpper()){//Login Matches
+                        matching = false; userName[1] = reader["Id"].ToString(); }
                 }
-                reader.Close();   Console.Clear();
+                reader.Close();
+                if (matching) {
+                    Console.Clear(); //Login Does Not Match
+                    Console.WriteLine("UserName Or Password Incorrect Try Again\nPress[ENTER]To Continue...");
+                    Console.ReadLine();
+                }
+                Console.Clear();
             }
             return false;
         }
@@ -314,21 +327,24 @@ namespace PersonalBuzzFeed
         {
             bool keepGoing = true;
             while (keepGoing){
+                Console.WriteLine("Welcome To PopQuiz!");
                 Console.WriteLine("Would You Like To \n[A]Log In\t[B]Create Account\t[C]Continue As Guest");
                 Console.WriteLine("Enter[Q]At Anytime To Quit");
-                UserInput = Console.ReadLine();
-                switch (UserInput){
+                userInput = Console.ReadLine();
+                switch (userInput){
                     case "A":
                         keepGoing = logIn(c);
                         break;
                     case "B":
-                        //keepGoing = createAccount();
+                        keepGoing = createAccount(c);
                         break;
                     case "C":
                         keepGoing = false;
                         break;
                     case "Q":
-                        //keepGoing = quit();
+                        Console.Clear();
+                        Console.WriteLine("Are You Sure You Want To Quit?");
+                        if ((userInput = Console.ReadLine().ToUpper()) == "Y") keepGoing = false;
                         break;
                     default:
                         error();
@@ -337,5 +353,92 @@ namespace PersonalBuzzFeed
                 Console.Clear();
             }
         }
+        static bool invalidUserName(SqlConnection c){
+            SqlCommand cmd = new SqlCommand("SELECT * FROM User",c);
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read()){
+                //Checking To See If Given User Name Has Spaces
+                if (userInput.Split().Length > 1){
+                    reader.Close(); Console.Clear();
+                    Console.WriteLine("User Name Cannot Contain Spaces\nPress[ENTER]To Continue...");
+                    Console.ReadLine(); Console.Clear(); return true;
+                }
+                //Checking To See If Given User Name Already Exist
+                else if (userInput == reader["userName"].ToString()){
+                    reader.Close(); Console.Clear();
+                    Console.WriteLine("User Name Alread Exists\nPress[ENTER]To Continue...");
+                    Console.ReadLine(); Console.Clear();  return true;
+                }
+            }
+            reader.Close();
+            //If No Conditionals Reached User Input Is Set To User Name
+            userName[0] = userInput;
+            return false;
+        }
+        static bool createAccount(SqlConnection c){
+            bool keepGoing = true;
+            while (keepGoing){
+                bool exist = true;
+                while (exist){
+                    Console.WriteLine("New Account\n\nEnter Your Desired User Name:\n");
+                    Console.WriteLine("Enter[Q]At Anytime To Quit\n");
+                    userInput = Console.ReadLine();
+                    if (userInput.ToUpper().Split()[0] == "Q") return true;
+                    exist = invalidUserName(c);
+                }
+                //Sets Valid userInput To userName
+                Console.Clear();
+                Console.WriteLine($"New Account\n\nUser Name: {userName}\nEnter Your Desired Password:\n");
+                Console.WriteLine("Enter[Q]At Anytime To Quit\n");
+                password = Console.ReadLine();
+                if (userInput.ToUpper().Split()[0] == "Q") return true;
+                //Verifying Information
+                bool notValid = true;
+                while (notValid){
+                    Console.WriteLine($"New Account\n\nUser Name: {userName}\nPassword: {password}");
+                    Console.WriteLine("Is This Information Correct? [Y/N]\n");
+                    switch (userInput = Console.ReadLine().ToUpper()){
+                        case "Y": account = true; keepGoing = false; notValid = false;
+                            break;
+                        case "N":
+                            bool incorrect = true;
+                            while (incorrect){
+                                Console.WriteLine("What Would You Like To Change?");
+                                Console.WriteLine("[A]User Name\t[B]Password\t[C]Start Over?\n");
+                                switch (userInput = Console.ReadLine().ToUpper()){
+                                    case "A"://Updates User Name
+                                        Console.WriteLine("Enter Your Desired User Name:\n");
+                                        userInput = Console.ReadLine();
+                                        incorrect = invalidUserName(c);
+                                        break;
+                                    case "B"://Updates Password
+                                        Console.WriteLine($"Current Password: {password}\nEnter Your New Password:\n");
+                                        password = Console.ReadLine();
+                                        break;
+                                    case "C"://Restarts Creating Account 
+                                        incorrect = false;
+                                        notValid = false;
+                                        break;
+                                    default:  error();
+                                        break;
+                                } 
+                            }
+                            break;
+                        default:  error();
+                            break;
+                    }  
+                }
+            }
+            if (account){//Creates Account
+                SqlCommand cmd = new SqlCommand("INSERT INTO \"User\" (userName,password)" +
+                                                $"VALUES ('{userName[0]}','{password})';"+
+                                                "SELECT @@Identity AS UId FROM \"User\"", c);
+                SqlDataReader reader = cmd.ExecuteReader();
+                //Grabs The UserId Of The Account Created And Saves It To The User Name Variable
+                reader.Read();    userName[1] = reader["UId"].ToString();    reader.Close();
+            }
+            return false;
+        }
+
     }
 }
